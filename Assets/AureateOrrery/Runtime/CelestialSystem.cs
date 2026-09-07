@@ -86,6 +86,20 @@ namespace AureateOrrery
         // 青白い天体オブジェクトの基本発光強度。
         [Range(0, 5)] public float emissionStrength = 1.25f;
 
+        [Header("Planet polish — rebuild after changing materials")]
+
+        // 中央天体の粗さ。高いほどHighlightが広く穏やかになる。
+        [Range(.25f, .9f)] public float centralPlanetRoughness = .62f;
+
+        // 中央天体の大きな地表トーンと微細なNormal変化。
+        [Range(0, 1)] public float centralPlanetSurfaceDetail = .42f;
+
+        // シルエットだけに残す、弱い寒色Atmosphere Rim。
+        [Range(0, .5f)] public float centralPlanetRimStrength = .12f;
+
+        // 通常天体の暗部を完全に消さないための最小Emission。
+        [Range(0, .15f)] public float secondaryPlanetEmission = .018f;
+
         // 金属パーツ用シェーダー。
         public Shader metalShader;
 
@@ -132,6 +146,9 @@ namespace AureateOrrery
             blue,
             glow,
             coreMaterial,
+            warmPlanet,
+            ivoryPlanet,
+            charcoalPlanet,
             hazeMaterial,
             trailMaterial;
 
@@ -262,6 +279,52 @@ namespace AureateOrrery
             m.SetColor("_EmissionColor", physicalMetal ? Color.black : color * emission);
 
             return m;
+        }
+
+
+        /// <summary>
+        /// 発光体ではなく、Scene Lightで立体を見せる天体Materialを生成する。
+        /// 大きなTone Variationを優先し、遠景でちらつくMicro Detailは抑える。
+        /// </summary>
+        Material Planet(
+            string label,
+            Color color,
+            float metallic,
+            float roughness,
+            float surfaceScale,
+            float variation,
+            float bump,
+            Color rim,
+            float rimStrength,
+            float emission)
+        {
+            Shader shader =
+                Resources.Load<Shader>("PlanetSurface");
+
+            var material = Own(
+                new Material(shader ? shader : metalShader)
+                {
+                    name = label
+                }
+            );
+
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Metallic", metallic);
+            material.SetFloat("_Smoothness", 1 - roughness);
+            material.SetColor("_EmissionColor", color * emission);
+
+            if (shader)
+            {
+                material.SetFloat("_SurfaceScale", surfaceScale);
+                material.SetFloat("_SurfaceVariation", variation);
+                material.SetFloat("_BumpStrength", bump);
+                material.SetFloat("_RoughnessVariation", variation * .28f);
+                material.SetColor("_RimColor", rim);
+                material.SetFloat("_RimPower", 5.5f);
+                material.SetFloat("_RimStrength", rimStrength);
+            }
+
+            return material;
         }
 
 
@@ -399,6 +462,47 @@ namespace AureateOrrery
                 "Celestial silver",
                 new Color(.55f, .725f, .91f),
                 emissionStrength
+            );
+
+            // Moving bodies use reflected light and restrained, desaturated colors.
+            // Reference stars retain the intentionally luminous blue material above.
+            warmPlanet = Planet(
+                "Warm stone planet",
+                new Color(.34f, .285f, .22f),
+                .12f,
+                .68f,
+                3.4f,
+                .25f,
+                .055f,
+                new Color(.20f, .28f, .40f),
+                .025f,
+                secondaryPlanetEmission
+            );
+
+            ivoryPlanet = Planet(
+                "Muted ivory planet",
+                new Color(.43f, .445f, .43f),
+                .08f,
+                .58f,
+                4.1f,
+                .20f,
+                .045f,
+                new Color(.24f, .32f, .46f),
+                .035f,
+                secondaryPlanetEmission
+            );
+
+            charcoalPlanet = Planet(
+                "Charcoal planet",
+                new Color(.15f, .17f, .19f),
+                .18f,
+                .72f,
+                3.1f,
+                .31f,
+                .065f,
+                new Color(.22f, .30f, .44f),
+                .045f,
+                secondaryPlanetEmission * .5f
             );
 
             // 恒星フィールド用発光マテリアル。
@@ -605,7 +709,11 @@ namespace AureateOrrery
                 var bead = Orb(
                     "Travelling sight bead",
                     .055f,
-                    blue,
+                    i % 3 == 0
+                        ? warmPlanet
+                        : i % 3 == 1
+                            ? ivoryPlanet
+                            : charcoalPlanet,
                     ring
                 );
 
@@ -715,21 +823,21 @@ namespace AureateOrrery
             harmonicMarker = Orb(
                 "Harmonic star",
                 .075f,
-                blue,
+                ivoryPlanet,
                 machine
             );
 
             lissajousMarker = Orb(
                 "Lissajous star",
                 .05f,
-                lightGold,
+                warmPlanet,
                 machine
             );
 
             epicycleMarker = Orb(
                 "Epicycle pointer",
                 .065f,
-                blue,
+                charcoalPlanet,
                 machine
             );
 
@@ -755,15 +863,22 @@ namespace AureateOrrery
             // 中央の発光コア
             // ============================================================
 
-            coreMaterial = Metal(
-                "Luminous core",
-                new Color(.72f, .84f, 1),
-                3.4f
+            coreMaterial = Planet(
+                "Ancient central planet",
+                new Color(.31f, .345f, .38f),
+                .20f,
+                centralPlanetRoughness,
+                2.75f,
+                centralPlanetSurfaceDetail,
+                centralPlanetSurfaceDetail * .18f,
+                new Color(.28f, .43f, .68f),
+                centralPlanetRimStrength,
+                .028f
             );
 
             core = Orb(
                 "Cold celestial core",
-                .19f,
+                .215f,
                 coreMaterial,
                 machine
             );
@@ -1191,7 +1306,7 @@ namespace AureateOrrery
             core.localScale =
                 Vector3.one *
                 (
-                    .19f +
+                    .215f +
                     .009f *
                     Mathf.Sin(
                         Phase - .5f
@@ -1250,21 +1365,44 @@ namespace AureateOrrery
 
 
             // ============================================================
-            // 中央コア発光
+            // 中央天体はLightで見せ、Emissionは暗部の最低限の情報だけを保持する。
             // ============================================================
 
             coreMaterial.SetColor(
                 "_EmissionColor",
                 new Color(
-                    .72f,
-                    .84f,
-                    1
+                    .31f,
+                    .345f,
+                    .38f
                 ) *
                 (
-                    2.1f +
-                    alignment * .65f
+                    .028f +
+                    alignment * .018f
                 )
             );
+
+            coreMaterial.SetFloat(
+                "_Smoothness",
+                1 - centralPlanetRoughness
+            );
+
+            if (coreMaterial.HasProperty("_SurfaceVariation"))
+            {
+                coreMaterial.SetFloat(
+                    "_SurfaceVariation",
+                    centralPlanetSurfaceDetail
+                );
+
+                coreMaterial.SetFloat(
+                    "_BumpStrength",
+                    centralPlanetSurfaceDetail * .18f
+                );
+
+                coreMaterial.SetFloat(
+                    "_RimStrength",
+                    centralPlanetRimStrength
+                );
+            }
 
 
             // ============================================================

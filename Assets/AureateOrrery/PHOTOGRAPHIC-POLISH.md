@@ -8,7 +8,7 @@ This pass keeps URP 17.6, the generated mechanism, mathematical geometry, choreo
 |---|---|
 | Warm directional key | RGB (1, .88, .72), intensity 2.6, rotation (35, -35, 0), soft shadows |
 | Cold directional rim | RGB (.55, .72, 1), intensity .45, rotation (-25, 145, 0) |
-| Core point | RGB (.6, .77, 1), intensity .65, range 4; URP distance attenuation |
+| Central planet key | RGB (.95, .72, .48), intensity 3.2, range 1.35, position (−.42, .34, −.52) |
 | Ambient fill | RGB (.018, .022, .030), flat |
 | Camera background | RGB (.003, .0035, .0045) |
 | Reflection environment | Local custom probe, 64 px HDR cubemap, intensity 1; dim warm/cold broad softboxes over a near-black base |
@@ -18,9 +18,14 @@ This pass keeps URP 17.6, the generated mechanism, mathematical geometry, choreo
 | Metal | .86 metallic, oxidation reduces it by up to .13 |
 | Smoothness | .48, recessed parts .32; oxidation reduces it by up to .12, filtered microvariation ±.0325 |
 | Metal emission | Zero; light defines the form |
-| Core emission | RGB (.72, .84, 1) × (2.1 + alignment × .65) |
+| Central planet | RGB (.31, .345, .38), metallic .20, roughness .62, procedural tonal detail .42 |
+| Central emission floor | Base RGB × (.028 + alignment × .018) |
+| Central atmosphere | Directional cool Fresnel rim, strength .12, power 5.5 |
+| Secondary planets | Warm stone / muted ivory / charcoal; roughness .58–.72; emission floor ≤ .018 |
 
 The new URP PBR shader uses object-space procedural patina and directional microvariation, so the existing untextured tube meshes need no UV or geometry changes. Subpixel variation fades to reduce shimmer. Recessed layers remain rougher and darker. The small curvature-based polish term is a visual approximation, not baked edge-wear analysis; scratches affect material response, not geometry. Reflection softboxes are an authored lighting approximation, not a captured HDR location or ray-traced interreflection. The mip chain is not a full GGX convolution.
+
+`PlanetSurface.shader` separates planets from intentionally luminous stars. It uses broad object-space noise for albedo and roughness, a restrained finite-difference normal perturbation, and a thin directionally weighted Fresnel edge. Planet emission is only a shadow-information floor; the warm directional key, cool fill/rim, repositioned local hero light, ambient fill, and ACES response define their spherical volume. The local point light previously sat inside the central sphere, where it could not illuminate the exterior surface. Bloom remains unchanged because the clipping originated in the former HDR planet emission, upstream of bloom.
 
 Opaque parts now cast shadows. Transparent trails and stars do not. Main-light shadows are supported by the existing pipeline settings. The distant key uses directional lighting; only the local core light has distance falloff. Shadow softness is URP filtering, not area-light penumbra simulation.
 
@@ -68,6 +73,6 @@ The added costs are shadow rendering, PBR procedural noise, bokeh DOF, velocity-
 
 Prioritize reducing motion blur and DOF quality on constrained GPUs. Do not increase particles or haze to compensate for weak lighting. A 1080 × 1920 target-device frame-rate claim requires profiling.
 
-Verification for this pass: Unity 6000.6.0f1 completed script reload and the existing Validate Loop checks (endpoint transforms, seam velocities, trail seam, 49 animation samples, finite mesh vertices, shader import including both new shaders). The updated 1080 × 1920 `ArtworkPreviews/AureateOrrery.png` was rendered in the live editor and visually inspected. Scoped `git diff --check` passed. Initial shader import-order and GPU Resident Drawer reload messages occurred while assets were being replaced; after the fallback and scene reload, the final validation/capture emitted no new matching errors. No final player build, motion-blur temporal measurement, or target-GPU benchmark was performed. The existing motion GIF/MP4 were not regenerated and represent the earlier rendering setup.
+Verification for the photographic pass: Unity 6000.6.0f1 completed script reload and the existing Validate Loop checks (endpoint transforms, seam velocities, trail seam, 49 animation samples, finite mesh vertices, and shader import). The 1080 × 1920 `ArtworkPreviews/AureateOrrery.png` was rendered in the live editor and visually inspected. Scoped `git diff --check` passed. The later planet-material polish requires a fresh Unity shader validation and preview render; the existing PNG and motion GIF/MP4 still represent the earlier rendering setup.
 
-Changed by this pass: the saved scene, `Runtime/CameraController.cs`, `Runtime/CelestialSystem.cs`, `Runtime/StarFieldGenerator.cs`, `Editor/OrrerySceneBuilder.cs`, and README; added `Runtime/PhotographicSetup.cs`, `Resources/AgedMetal.shader`, `Resources/PhotographicDust.shader`, and this settings document with Unity metadata. Geometry generators, trail code, the existing glow shader, and capture implementation were preserved from the working tree (only the shader-validation list was extended).
+Changed by the planet polish: `Runtime/CelestialSystem.cs` and the shader validation list; added `Resources/PlanetSurface.shader`. Geometry, orbit mathematics, animation, camera, dust, global lighting, exposure, bloom, ACES, and capture behavior were preserved.

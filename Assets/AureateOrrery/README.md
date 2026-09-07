@@ -35,7 +35,7 @@ AUREATE ORRERY [CelestialSystem]
 Portrait Camera [Camera, UniversalAdditionalCameraData, CameraController]
 Warm key [Directional Light]
 Silver rim [Directional Light]
-Core illumination [Point Light]
+Core illumination [localized warm Point Light]
 Restrained bloom + tonal response [Volume]
 ```
 
@@ -67,10 +67,11 @@ All files contain complete executable source; no pseudocode or missing graph ass
 - `Runtime/StarFieldGenerator.cs`: one combined mesh of small star quads, seeded brightness and size; no per-star updates.
 - `Runtime/CelestialTrails.cs`: three analytical orbital histories in one dynamic mesh with reused buffers.
 - `Runtime/CameraController.cs`: perspective fitting using the smaller angular field of view; periodic parallax.
+- `Resources/PlanetSurface.shader`: URP PBR planet shading with broad procedural tone/roughness, restrained bump, and directional atmospheric edge.
 - `Shaders/CelestialGlow.shader`: URP additive radial glow, smooth edge falloff and periodic star brightness. Shader time is supplied by the shared clock rather than `_Time`.
 - `Editor/OrrerySceneBuilder.cs`: scene and Volume asset creation, validation, direct camera preview render.
 
-Metal uses URP Lit, metallic 0.78 and smoothness 0.55, with restrained emission. The core has a separate stronger emissive material. Glow uses additive blending, disabled depth writes, and backface rendering; it retains depth testing. The central scattering is a subtle billboard approximation, not volumetric ray marching.
+Mechanism metal uses the custom physical brass shader with zero emission. Planets use a separate PBR surface shader and reflected light; only reference stars, trails, and designated markers retain visible emission. The central planet has broad procedural surface structure, roughness variation, a very low emission floor, and a thin directional cool rim. Glow uses additive blending, disabled depth writes, and backface rendering; it retains depth testing. The central scattering is a subtle billboard approximation, not volumetric ray marching.
 
 ## Inspector starting values
 
@@ -91,6 +92,10 @@ Metal uses URP Lit, metallic 0.78 and smoothness 0.55, with restrained emission.
 | Trail Strength | 1 | Trail point size; zero hides the trails |
 | Alignment Glow | 0.45 | Broad once-per-cycle core light crest |
 | Emission Strength | 1.25 | Moving celestial points |
+| Central Planet Roughness | 0.62 | Broadens and softens the hero highlight |
+| Central Planet Surface Detail | 0.42 | Controls broad tone, roughness, and restrained bump |
+| Central Planet Rim Strength | 0.12 | Thin cool silhouette separation; avoid turning it into a halo |
+| Secondary Planet Emission | 0.018 | Shadow-information floor; keep below 0.05 |
 | Manual Phase | Off | Enable for deterministic posing or frame capture |
 | Normalized Phase | 0–1 | Manual cycle position |
 | Camera FOV | 32° | Cinematic perspective |

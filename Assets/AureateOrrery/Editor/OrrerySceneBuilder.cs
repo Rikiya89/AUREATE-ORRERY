@@ -233,7 +233,8 @@ namespace AureateOrrery.Editor
             // 中央Point Light
             // ============================================================
 
-            // 天体儀中央から青白い光を放つPoint Light。
+            // 中央天体の外側から当てる、局所的なWarm Hero Light。
+            // 球の内部へ置くと表面を照らせないため、Camera側かつ斜め上へ配置する。
             var point =
                 new GameObject("Core illumination")
                     .AddComponent<Light>();
@@ -243,16 +244,23 @@ namespace AureateOrrery.Editor
 
             point.color =
                 new Color(
-                    .6f,
-                    .77f,
-                    1
+                    .95f,
+                    .72f,
+                    .48f
                 );
 
             point.intensity =
-                .65f;
+                3.2f;
 
             point.range =
-                4;
+                1.35f;
+
+            point.transform.position =
+                new Vector3(
+                    -.42f,
+                    .34f,
+                    -.52f
+                );
 
 
             // ============================================================
@@ -803,6 +811,7 @@ namespace AureateOrrery.Editor
                 new[]
                 {
                     "AureateOrrery/AgedMetal",
+                    "AureateOrrery/PlanetSurface",
                     "AureateOrrery/PhotographicDust",
                     "AureateOrrery/CelestialGlow",
                     "Universal Render Pipeline/Lit"
