@@ -1,8 +1,10 @@
 # AUREATE ORRERY
 
+**Current rendering setup:** [Photographic polish settings and limitations](PHOTOGRAPHIC-POLISH.md). This supersedes the original lighting, materials, camera and performance defaults documented below. Geometry and animation documentation remains applicable.
+
 An imaginary astronomical instrument: a gold ecliptic dial holds five tilted brass meridians, a cold stellar core, and fine mathematical records. Twelve diamond-shaped sighting stations give the perimeter an engraved-manuscript character without imitating historical writing. The sacred geometry remains behind the astronomical mechanism.
 
-Built for this project's **Unity 6000.6.0f1 / Universal Render Pipeline 17.6.0**. No added dependencies, textures, VFX Graph, or manually positioned particle fields.
+Built for this project's **Unity 6000.6.0f1 / Universal Render Pipeline 17.6.0**. No added dependencies or VFX Graph. The photographic pass generates a small reflection cubemap and sparse dust mesh at runtime.
 
 ## Open and play
 
