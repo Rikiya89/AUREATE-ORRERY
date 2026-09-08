@@ -114,7 +114,7 @@ namespace AureateOrrery
                     // Lissajous軌道を暖色系のゴールドにする。
                     //
                     // その他:
-                    // Harmonic / Epicycleを青白い天体色にする。
+                    // Harmonic / Epicycle use subdued blue-grey, below the brass highlights.
                     //
                     // fade:
                     // Trail後方の色を暗くする。
@@ -130,9 +130,9 @@ namespace AureateOrrery
                                     .32f
                                 )
                                 : new Color(
-                                    .48f,
-                                    .73f,
-                                    1
+                                    .30f,
+                                    .40f,
+                                    .48f
                                 )
                         )
                         * fade

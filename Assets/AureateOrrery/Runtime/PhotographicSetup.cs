@@ -53,6 +53,11 @@ namespace AureateOrrery
 
         // 毎フレームFocus Distanceを更新するDepth of Field。
         readonly DepthOfField focus;
+        readonly ReflectionProbe probe;
+        readonly ColorAdjustments grading;
+        readonly Material backdropMaterial;
+        readonly Mesh backdropMesh;
+        readonly Transform backdrop;
 
 
         // ================================================================
@@ -207,14 +212,13 @@ namespace AureateOrrery
             // Color Adjustments
             // ============================================================
 
-            var grading =
+            grading =
                 profile.Add<ColorAdjustments>(true);
 
 
-            // 少し露出を下げ、
-            // 黒背景と金属Highlightのコントラストを強調。
+            // Lift fine brass detail at mobile playback sizes while retaining ACES highlights.
             grading.postExposure.value =
-                -.35f;
+                .25f;
 
             grading.contrast.value =
                 4;
@@ -295,7 +299,7 @@ namespace AureateOrrery
 
             // 強すぎない細粒Film Grain。
             grain.intensity.value =
-                .055f;
+                .025f;
 
             grain.response.value =
                 .85f;
@@ -343,7 +347,7 @@ namespace AureateOrrery
             // 動きを残しつつ、
             // ディテールが失われない程度に抑える。
             motion.intensity.value =
-                .12f;
+                .06f;
 
             motion.clamp.value =
                 .008f;
@@ -512,7 +516,7 @@ namespace AureateOrrery
                                         ).normalized
                                     )
                                 ),
-                                18
+                                10
                             );
 
 
@@ -534,7 +538,7 @@ namespace AureateOrrery
                                         ).normalized
                                     )
                                 ),
-                                26
+                                16
                             );
 
 
@@ -551,9 +555,9 @@ namespace AureateOrrery
                         // の組み合わせで簡易スタジオ環境を生成。
                         pixels[y * 64 + x] =
                             new Color(
-                                .014f,
-                                .017f,
-                                .022f
+                                .020f,
+                                .024f,
+                                .030f
                             )
                             +
                             new Color(
@@ -593,7 +597,7 @@ namespace AureateOrrery
             // Local Reflection Probe
             // ============================================================
 
-            var probe =
+            probe =
                 root.AddComponent<ReflectionProbe>();
 
 
@@ -623,6 +627,25 @@ namespace AureateOrrery
             probe.boxProjection =
                 false;
 
+
+            Shader backdropShader = Resources.Load<Shader>("CelestialBackdrop");
+            if (backdropShader)
+            {
+                backdropMaterial = new Material(backdropShader) { hideFlags = HideFlags.HideAndDontSave };
+                backdropMesh = new Mesh { name = "Celestial backdrop", hideFlags = HideFlags.HideAndDontSave };
+                backdropMesh.vertices = new[] { new Vector3(-1,-1,0), new Vector3(1,-1,0), new Vector3(1,1,0), new Vector3(-1,1,0) };
+                backdropMesh.uv = new[] { Vector2.zero, Vector2.right, Vector2.one, Vector2.up };
+                backdropMesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+                backdropMesh.RecalculateBounds();
+                var backgroundObject = new GameObject("Celestial background (transient)") { hideFlags = HideFlags.HideAndDontSave };
+                backdrop = backgroundObject.transform;
+                backdrop.SetParent(root.transform, false);
+                backgroundObject.AddComponent<MeshFilter>().sharedMesh = backdropMesh;
+                var backdropRenderer = backgroundObject.AddComponent<MeshRenderer>();
+                backdropRenderer.sharedMaterial = backdropMaterial;
+                backdropRenderer.shadowCastingMode = ShadowCastingMode.Off;
+                backdropRenderer.receiveShadows = false;
+            }
 
             // ============================================================
             // Dust Mesh
@@ -957,6 +980,19 @@ namespace AureateOrrery
         /// </summary>
         public void Update()
         {
+            if (backdrop)
+            {
+                float depth = camera.farClipPlane * .95f;
+                float halfHeight = depth * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * .5f);
+                backdrop.localPosition = new Vector3(0, 0, depth);
+                backdrop.localScale = new Vector3(halfHeight * camera.aspect * 1.01f, halfHeight * 1.01f, 1);
+                backdropMaterial.SetFloat("_Aspect", camera.aspect);
+                backdropMaterial.SetFloat("_Intensity", system.nebulaBrightness);
+                backdropMaterial.SetFloat("_Stars", system.backgroundStarBrightness);
+                backdropMaterial.SetFloat("_Seed", system.seed);
+            }
+            probe.intensity = system.reflectionStrength;
+            grading.postExposure.value = system.exposure;
             // ============================================================
             // Depth of Field Focus
             // ============================================================
@@ -1177,6 +1213,9 @@ namespace AureateOrrery
                 root
             );
 
+
+            Release(backdropMaterial);
+            Release(backdropMesh);
 
             // Dust Mesh。
             Release(

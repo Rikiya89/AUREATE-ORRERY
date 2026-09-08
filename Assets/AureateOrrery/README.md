@@ -8,9 +8,9 @@ Built for this project's **Unity 6000.6.0f1 / Universal Render Pipeline 17.6.0**
 
 ## Open and play
 
-1. Open `Assets/AureateOrrery/AureateOrrery.unity` and press Play.
+1. Open `Assets/AureateOrrery/AureateOrrery.unity` and press Play. **Auto Play On Start** starts the loop automatically, including after manual posing.
 2. Set the Game view to a **1080 × 1920** fixed resolution. The camera also automatically fits landscape and square viewports.
-3. Select **AUREATE ORRERY** to adjust the Inspector. For geometry settings, use the component's **Rebuild instrument** context menu afterward.
+3. Select **AUREATE ORRERY** to adjust the Inspector. **Live presentation** and **Live planet shading** update without rebuilding; stop Play and save the scene to keep your edits. For geometry settings, use the component's **Rebuild instrument** context menu afterward.
 4. To reconstruct the scene, choose **Art → Aureate Orrery → Create Scene**. This asks before replacing the generated scene and respects unsaved scenes. The original SampleScene is untouched.
 5. **Art → Aureate Orrery → Validate Loop** checks the loop endpoints, 49 animation samples, finite mesh vertices, and shader import errors.
 6. **Art → Aureate Orrery → Render Portrait Preview** validates and renders a 1080 × 1920 PNG into `ArtworkPreviews/AureateOrrery.png` at the project root.

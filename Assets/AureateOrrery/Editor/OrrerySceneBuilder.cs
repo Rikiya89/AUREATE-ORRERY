@@ -812,6 +812,7 @@ namespace AureateOrrery.Editor
                 {
                     "AureateOrrery/AgedMetal",
                     "AureateOrrery/PlanetSurface",
+                    "AureateOrrery/CelestialBackdrop",
                     "AureateOrrery/PhotographicDust",
                     "AureateOrrery/CelestialGlow",
                     "Universal Render Pipeline/Lit"

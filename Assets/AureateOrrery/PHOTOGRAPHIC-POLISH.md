@@ -21,7 +21,7 @@ This pass keeps URP 17.6, the generated mechanism, mathematical geometry, choreo
 | Central planet | RGB (.31, .345, .38), metallic .20, roughness .62, procedural tonal detail .42 |
 | Central emission floor | Base RGB × (.028 + alignment × .018) |
 | Central atmosphere | Directional cool Fresnel rim, strength .12, power 5.5 |
-| Secondary planets | Warm stone / muted ivory / charcoal; roughness .58–.72; emission floor ≤ .018 |
+| Secondary planets | Warm stone / muted ivory / charcoal; roughness .72–.76; emission floor ≤ .018 |
 
 The new URP PBR shader uses object-space procedural patina and directional microvariation, so the existing untextured tube meshes need no UV or geometry changes. Subpixel variation fades to reduce shimmer. Recessed layers remain rougher and darker. The small curvature-based polish term is a visual approximation, not baked edge-wear analysis; scratches affect material response, not geometry. Reflection softboxes are an authored lighting approximation, not a captured HDR location or ray-traced interreflection. The mip chain is not a full GGX convolution.
 
@@ -37,11 +37,11 @@ The runtime Volume has priority 20 and overrides the saved legacy `OrreryVolume.
 |---|---|
 | Sensor / lens | 36 × 24 mm, vertical gate fit, 75 mm (Inspector range 50–85 mm) |
 | Aperture / ISO / shutter metadata | f/2.8, ISO 100, 1/48 s (180° at 24 fps) |
-| Framing | Existing .82 frame fill; distance recalculated for the optical vertical FOV |
+| Framing | .94 frame fill at portrait aspect ≤ .7, smoothly blended to .82 at square and landscape; distance follows the optical vertical FOV |
 | Movement | Parallax .018, breathing dolly .002; existing phase relationships |
 | DOF | Bokeh, f/2.8, 7 blades, focal length synchronized with camera |
 | Focus | Camera-axis distance to system center, updated after framing |
-| Exposure | Color Adjustments post exposure −.35 EV |
+| Exposure | Color Adjustments post exposure +.25 EV |
 | Tonemapping | ACES |
 | Contrast / saturation | +4 / −9 |
 | White balance | Temperature −3, tint +1 |
@@ -49,8 +49,8 @@ The runtime Volume has priority 20 and overrides the saved legacy `OrreryVolume.
 | Vignette | Intensity .13, smoothness .65 |
 | Chromatic aberration | .008 |
 | Lens distortion | −.012; remaining component defaults retained |
-| Grain | Thin1, intensity .055, response .85 |
-| Motion blur | CameraAndObjects, Medium, intensity .12, clamp .008 |
+| Grain | Thin1, intensity .025, response .85 |
+| Motion blur | CameraAndObjects, Medium, intensity .06, clamp .008 |
 
 URP exposure is controlled by postExposure; ISO/shutter metadata does not automatically set photometric exposure. Motion blur is a deliberately restrained velocity-buffer approximation, not a calibrated 180° temporal integration. Opaque motion vectors use URP's standard pass; transparent marker trails retain their original analytic animation. Grain and temporal rendering effects are not guaranteed bit-identical at the loop seam.
 
@@ -76,3 +76,64 @@ Prioritize reducing motion blur and DOF quality on constrained GPUs. Do not incr
 Verification for the photographic pass: Unity 6000.6.0f1 completed script reload and the existing Validate Loop checks (endpoint transforms, seam velocities, trail seam, 49 animation samples, finite mesh vertices, and shader import). The 1080 × 1920 `ArtworkPreviews/AureateOrrery.png` was rendered in the live editor and visually inspected. Scoped `git diff --check` passed. The later planet-material polish requires a fresh Unity shader validation and preview render; the existing PNG and motion GIF/MP4 still represent the earlier rendering setup.
 
 Changed by the planet polish: `Runtime/CelestialSystem.cs` and the shader validation list; added `Resources/PlanetSurface.shader`. Geometry, orbit mathematics, animation, camera, dust, global lighting, exposure, bloom, ACES, and capture behavior were preserved.
+
+## Mobile readability polish — 2026-09-08
+
+Portrait framing is approximately 15% larger (.82 → .94 fill), retaining a border around the instrument. Square and landscape use the existing .82 fill, with continuous interpolation between aspect .7 and 1. Exposure rises by .6 EV; lower grain and motion blur preserve fine engraved details at small playback sizes. Geometry, materials, lighting, bloom, and orbital choreography are unchanged.
+
+Unity compiled the changes and Validate Loop passed, including 49 animation samples, seam checks, mesh coordinates, and shader imports. The updated 1080 × 1920 portrait PNG was rendered and visually inspected; the perimeter remains inside the frame. Actual phone playback, other viewport renders, a player build, and a refreshed motion export have not been verified.
+
+## Secondary sphere and trail balance — 2026-09-08
+
+Warm stone base RGB is now (.30, .25, .19), roughness .76. Muted ivory uses warmer RGB (.33, .30, .245), roughness .74 and rim strength .02. These material changes soften the small bodies while preserving their lit and shadowed sides. The central planet and charcoal bodies retain their settings. Harmonic and epicycle trail RGB changes from (.48, .73, 1) to (.30, .40, .48), retaining the existing fade, geometry and motion; the gold trail stays unchanged. Exposure, lighting, framing and brass materials are unchanged by this adjustment.
+
+Unity loop and shader validation passed; the refreshed portrait PNG and live Game view were visually inspected. Scoped source whitespace checks passed. No new video export or target-device test was performed.
+
+## Connected reference spheres — 2026-09-08
+
+The 26 Reference star spheres connected by short catalogue chords now use PlanetSurface with muted stone RGB (.28, .265, .23), metallic .08, roughness .78 and rim strength .01. Their animated emission is reduced to a .018 shadow floor multiplied by the existing emission control and phase modulation. Both material creation and animation updates use the new values. This corrects the separate connected nodes that the moving-planet adjustment did not cover. Node sizes, chord geometry, central planet, trails and global exposure are unchanged. Unity loop/shader validation and scoped whitespace checks passed; the refreshed portrait PNG was visually inspected.
+
+## Live Inspector controls and automatic playback — 2026-09-08
+
+Select **AUREATE ORRERY** in the Hierarchy, then edit **Celestial System → Live presentation — no rebuild needed**. These controls apply in Edit mode and during playback:
+
+| Inspector field | Starting value | Adjustment |
+|---|---:|---|
+| Reflection Strength | 1.65 | Raises broad reflected light on surfaces |
+| Exposure | .25 | Overall exposure in EV |
+| Engraving Brightness | .8 | Keeps the fine construction lines behind the main rings |
+| Brass Roughness | .58 | Higher values broaden and soften metal highlights |
+| Central Planet Color | RGB (.38, .405, .42) | Makes the central body more readable |
+| Reference Sphere Color | RGB (.36, .32, .25) | Warm shading for connected beads |
+| Reference Sphere Emission | .035 | Subtle visibility floor; avoid high values |
+| Reference Sphere Roughness | .68 | Softens connected bead highlights |
+| Trail Brightness | .85 | Changes brightness independently from Trail Strength, which sizes the trail |
+
+The existing central roughness, surface detail, rim strength and Secondary Planet Emission controls also update live. Broad reflection softboxes now use angular powers 10 and 16, previously 18 and 26. Geometry remains unchanged; layer separation comes from the quieter engraving and trail materials rather than a new depth effect.
+
+Under **Clock**, leave **Auto Play On Start** enabled. Entering Play clears Manual Phase, resets the clock to phase zero, and starts the loop. A saved speed of zero becomes 1 at startup; positive speeds are retained. Once playing, speed zero can still pause the loop, and Manual Phase can be enabled for posing. Disable Auto Play On Start when an external capture workflow must retain a manual pose at startup.
+
+To retain your settings, stop Play, edit the Inspector, and save the scene with Cmd+S. Unity normally discards Inspector changes made during Play. Composition controls still require the component context menu **Rebuild instrument**; camera framing lives on **Portrait Camera → Camera Controller**.
+
+Verification: Unity compilation and existing loop/shader validation passed. A fresh portrait preview was inspected, and Play was observed advancing through different ring orientations before returning to Edit mode. Alternative Enter Play Mode reload configurations and a standalone player build were not tested.
+
+## Focal point and reflected fill — 2026-09-08
+
+Central Planet Size is a new live Inspector multiplier, default 1.12 (12% larger), applied to the existing breathing animation. Reflection Strength now defaults to 1.65 and is serialized in the scene. The reflection cubemap base rises from RGB (.014, .017, .022) to (.020, .024, .030), lifting reflected shadow detail without increasing exposure. Polished meridians use smoothness 0.06 above the aged brass setting for a slightly tighter highlight. Geometry paths, camera framing, and automatic playback are preserved.
+
+Source whitespace checks passed. Unity scene reload was blocked by automatic approval review because it could discard unsaved editor changes. The latest changes still require scene reload and fresh visual/loop validation; the existing portrait PNG predates this adjustment.
+
+## Celestial background — 2026-09-08
+
+The camera now carries a procedural blue/mauve nebula and sparse warm/cool stars, rendered behind the instrument in one draw. An asymmetric diagonal cloud and darker central region keep the mechanism readable. The background is seeded and static, so it introduces no animation seam. It fits the camera aspect every frame and releases its mesh and material with the existing photographic setup. This is a stylized shader backdrop, not a volumetric simulation.
+
+Select **AUREATE ORRERY → Celestial System → Live celestial background**:
+
+- **Nebula Brightness: 1** — controls the colored mist and deep-space base; range 0–2.
+- **Background Star Brightness: .65** — controls the backdrop stars separately; range 0–2.
+- Set both to zero for a black backdrop. Existing world-space stars remain separate.
+- Edit outside Play mode and save the scene to retain changes.
+
+Added Resources/CelestialBackdrop.shader; updated CelestialSystem.cs, PhotographicSetup.cs and the shader validation list in OrrerySceneBuilder.cs. Unity compiled successfully after correcting a local variable name collision. The new shader passed validation, along with the existing 49 animation samples, seams and mesh checks. A fresh 1080 × 1920 portrait PNG was rendered and visually inspected. Source whitespace checks passed. Target-device GPU performance, landscape rendering and standalone builds remain untested.
+
+The editor was available without the earlier scene-reload dialog on resuming verification; no rejected Reload action was retried. The current preview supersedes the earlier black-background PNG.

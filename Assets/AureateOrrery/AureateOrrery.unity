@@ -154,6 +154,7 @@ MonoBehaviour:
   system: {fileID: 1912588071}
   focalLength: 75
   frameFill: 0.82
+  portraitFrameFill: 0.94
   parallax: 0.018
 --- !u!81 &420586874
 AudioListener:
@@ -655,6 +656,8 @@ MonoBehaviour:
   manualPhase: 0
   normalizedPhase: 0
   emissionStrength: 1.25
+  reflectionStrength: 1.65
+  centralPlanetSize: 1.12
   metalShader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
   glowShader: {fileID: 4800000, guid: 81202f76384674e88abd521968908d72, type: 3}
 --- !u!4 &1912588072

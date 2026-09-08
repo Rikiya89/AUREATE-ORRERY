@@ -15,6 +15,9 @@ namespace AureateOrrery
         [Range(.65f, .95f)]
         public float frameFill = .82f;
 
+        [Tooltip("Frame fill for narrow portrait screens; blends into the standard framing at square aspect.")]
+        [Range(.65f, .95f)] public float portraitFrameFill = .94f;
+
         // カメラの微細な視差移動量
         [Range(0, .2f)]
         public float parallax = .018f;
@@ -72,11 +75,14 @@ namespace AureateOrrery
                 )
             );
 
+            float portraitBlend = Mathf.InverseLerp(1f, .7f, cameraComponent.aspect);
+            float effectiveFrameFill = Mathf.Lerp(frameFill, portraitFrameFill, portraitBlend);
+
             // 天体系が画面内に収まるカメラ距離を計算
             float distance =
                 radius
                 / Mathf.Sin(limitingHalfAngle)
-                / frameFill;
+                / Mathf.Clamp(effectiveFrameFill, .65f, .95f);
 
             // 天体系の中心位置
             Vector3 center = system.transform.position;

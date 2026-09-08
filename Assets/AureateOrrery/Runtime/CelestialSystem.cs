@@ -48,6 +48,8 @@ namespace AureateOrrery
         // ================================================================
 
         [Header("Clock")]
+        [Tooltip("Start from phase zero on entering Play, even after manually posing the scene.")]
+        public bool autoPlayOnStart = true;
 
         // アニメーションが一周するまでの秒数。
         [Min(1)] public float loopSeconds = 12;
@@ -86,7 +88,24 @@ namespace AureateOrrery
         // 青白い天体オブジェクトの基本発光強度。
         [Range(0, 5)] public float emissionStrength = 1.25f;
 
-        [Header("Planet polish — rebuild after changing materials")]
+        [Header("Live celestial background")]
+        [Range(0, 2)] public float nebulaBrightness = 1;
+        [Range(0, 2)] public float backgroundStarBrightness = .65f;
+
+        [Header("Live presentation — no rebuild needed")]
+        [Range(0, 3)] public float reflectionStrength = 1.65f;
+        [Range(-1, 1)] public float exposure = .25f;
+        [Range(.3f, 1.5f)] public float engravingBrightness = .8f;
+        [Range(.2f, .85f)] public float brassRoughness = .58f;
+        [ColorUsage(false)] public Color centralPlanetColor = new Color(.38f, .405f, .42f);
+        [Tooltip("Scales the central planet while retaining its breathing motion.")]
+        [Range(.8f, 1.2f)] public float centralPlanetSize = 1.12f;
+        [ColorUsage(false)] public Color referenceSphereColor = new Color(.36f, .32f, .25f);
+        [Range(0, .15f)] public float referenceSphereEmission = .035f;
+        [Range(.3f, .9f)] public float referenceSphereRoughness = .68f;
+        [Range(0, 2)] public float trailBrightness = .85f;
+
+        [Header("Live planet shading")]
 
         // 中央天体の粗さ。高いほどHighlightが広く穏やかになる。
         [Range(.25f, .9f)] public float centralPlanetRoughness = .62f;
@@ -167,6 +186,7 @@ namespace AureateOrrery
 
         // 自動アニメーション用の経過時間。
         double elapsed;
+        bool wasPlaying;
 
         // 現在のアニメーション位相。
         // 0〜2π の範囲で保持される。
@@ -180,6 +200,7 @@ namespace AureateOrrery
         // コンポーネント有効化時に天体儀を生成する。
         void OnEnable()
         {
+            wasPlaying = false;
             Rebuild();
         }
 
@@ -457,20 +478,27 @@ namespace AureateOrrery
                 .48f
             );
 
-            // 青白い天体光。
-            blue = Metal(
-                "Celestial silver",
-                new Color(.55f, .725f, .91f),
-                emissionStrength
+            // Connected catalogue nodes need shaded volume, not white emissive pinpoints.
+            blue = Planet(
+                "Muted reference stone",
+                new Color(.28f, .265f, .23f),
+                .08f,
+                .78f,
+                3.4f,
+                .20f,
+                .035f,
+                new Color(.20f, .25f, .30f),
+                .01f,
+                .018f * emissionStrength
             );
 
             // Moving bodies use reflected light and restrained, desaturated colors.
-            // Reference stars retain the intentionally luminous blue material above.
+            // Connected reference nodes use the subdued stone material above.
             warmPlanet = Planet(
                 "Warm stone planet",
-                new Color(.34f, .285f, .22f),
+                new Color(.30f, .25f, .19f),
                 .12f,
-                .68f,
+                .76f,
                 3.4f,
                 .25f,
                 .055f,
@@ -481,14 +509,14 @@ namespace AureateOrrery
 
             ivoryPlanet = Planet(
                 "Muted ivory planet",
-                new Color(.43f, .445f, .43f),
+                new Color(.33f, .30f, .245f),
                 .08f,
-                .58f,
+                .74f,
                 4.1f,
                 .20f,
                 .045f,
                 new Color(.24f, .32f, .46f),
-                .035f,
+                .02f,
                 secondaryPlanetEmission
             );
 
@@ -1096,6 +1124,15 @@ namespace AureateOrrery
                 return;
 
 
+            if (Application.isPlaying && !wasPlaying && autoPlayOnStart)
+            {
+                manualPhase = false;
+                normalizedPhase = 0;
+                elapsed = 0;
+                if (globalAnimationSpeed <= 0) globalAnimationSpeed = 1;
+            }
+            wasPlaying = Application.isPlaying;
+
             // Play Mode の場合のみ経過時間を進める。
             if (Application.isPlaying)
                 elapsed +=
@@ -1304,7 +1341,7 @@ namespace AureateOrrery
 
             // 通常の微細な脈動と Alignment Glow を組み合わせる。
             core.localScale =
-                Vector3.one *
+                Vector3.one * centralPlanetSize *
                 (
                     .215f +
                     .009f *
@@ -1368,13 +1405,21 @@ namespace AureateOrrery
             // 中央天体はLightで見せ、Emissionは暗部の最低限の情報だけを保持する。
             // ============================================================
 
+            gold.SetFloat("_Smoothness", 1 - brassRoughness);
+            // The two polished meridians carry a slightly tighter highlight than aged brass.
+            lightGold.SetFloat("_Smoothness", Mathf.Clamp01(1 - brassRoughness + .06f));
+            inkGold.SetColor("_BaseColor", new Color(.32f, .23f, .11f) * engravingBrightness);
+            coreMaterial.SetColor("_BaseColor", centralPlanetColor);
+            blue.SetColor("_BaseColor", referenceSphereColor);
+            blue.SetFloat("_Smoothness", 1 - referenceSphereRoughness);
+            warmPlanet.SetColor("_EmissionColor", new Color(.30f, .25f, .19f) * secondaryPlanetEmission);
+            ivoryPlanet.SetColor("_EmissionColor", new Color(.33f, .30f, .245f) * secondaryPlanetEmission);
+            charcoalPlanet.SetColor("_EmissionColor", new Color(.15f, .17f, .19f) * secondaryPlanetEmission * .5f);
+            trailMaterial.SetColor("_Tint", Color.white * trailBrightness);
+
             coreMaterial.SetColor(
                 "_EmissionColor",
-                new Color(
-                    .31f,
-                    .345f,
-                    .38f
-                ) *
+                centralPlanetColor *
                 (
                     .028f +
                     alignment * .018f
@@ -1411,12 +1456,8 @@ namespace AureateOrrery
 
             blue.SetColor(
                 "_EmissionColor",
-                new Color(
-                    .55f,
-                    .725f,
-                    .91f
-                ) *
-                emissionStrength *
+                referenceSphereColor *
+                (referenceSphereEmission * emissionStrength) *
                 (
                     1 +
                     .12f *
